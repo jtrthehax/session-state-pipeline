@@ -3,6 +3,8 @@
 **LLM State Specification (SLS + DSR)**  
 _A unified framework for latent‑state serialization, semantic state reconstruction, and multi‑session continuity in large language models._
 
+[![DOI](https://zenodo.org/badge/1278357519.svg)](https://doi.org/10.5281/zenodo.20820098)
+
 ---
 
 ## **Overview**
