@@ -1,78 +1,108 @@
-# **README.md (Draft v0.1)**
+# LLM State Specification — SLS + DSR
 
-**LLM State Specification (SLS + DSR)**  
-_A unified framework for latent‑state serialization, semantic state reconstruction, and multi‑session continuity in large language models._
+**The missing layer in the modern LLM stack.**
 
 [![DOI](https://zenodo.org/badge/1278357519.svg)](https://doi.org/10.5281/zenodo.20820098)
 
 ---
 
-## **Overview**
+## The Problem
 
-This repository contains the initial specification suite for **LLM statefulness**:
+Every LLM session ends the same way: everything evaporates.
 
-- **Serializable Latent State (SLS)** — a low‑level, infrastructure‑grade format for capturing and restoring the _actual latent state_ of a running LLM (KV‑cache, sampling state, system bindings).
-- **Derived State Reconstruction (DSR)** — a high‑level, model‑agnostic method for reconstructing a functionally equivalent working state for _stateless hosted models_ where latent state access is impossible.
+Not just the conversation — the *working context*. The task structure 
+you built. The decisions you made and why. The hypotheses you were 
+testing. The constraints you'd established. The momentum you had.
 
-Together, SLS and DSR define the missing layer in the modern LLM stack:  
-**a standardized, portable, inspectable representation of model state that enables session persistence, forking, migration, and multi‑session reasoning.**
+The model returns to a blank slate. You start over.
 
-This repo includes:
-
-- **SLS Initial Proposal** — conceptual foundation and rationale
-- **SLS Implementation Guide** — engineering details, hooks, and runtime considerations
-- **DSR Specification** — semantic state envelopes for hosted models
-- **Schemas and examples** for Structured State Envelopes (SSE)
-
----
-
-## **Motivation**
-
-LLMs today are effectively **stateless**. When a session ends or a context window fills, all accumulated understanding disappears:
-
-- task structure
-- decisions and rationale
-- working hypotheses
-- file and artifact state
-- debugging context
-- architectural constraints
-
-Users must repeatedly re‑establish context, and systems cannot support long‑running or multi‑session workflows.
-
-**SLS and DSR solve this.**
-
-### **SLS** enables:
-
-- deterministic replay
-- session forking
-- cross‑hardware migration
-- auditability
-- long‑running agents
-- infrastructure‑level state management
-
-### **DSR** enables:
-
-- multi‑session continuity for hosted models
-- model‑agnostic state transfer
-- human‑inspectable working memory
-- structured task and artifact tracking
-- semantic reconstruction of working context
-
-SLS is the ideal.  
-DSR is the deploy‑today path.  
-Together they form a complete statefulness architecture.
+This is not a UX inconvenience. It is a structural architectural 
+failure. Long-running workflows, multi-session reasoning, and 
+collaborative agents are all blocked by the same root cause: 
+**there is no standard for what model state is, how to capture it, 
+or how to restore it.**
 
 ---
 
-## **Repository Structure**
+## The Solution
+
+This repository defines two complementary specifications:
+
+| Spec | Layer | Who It's For |
+| --- | --- | --- |
+| **SLS** — Serializable Latent State | Infrastructure | Self-hosted / provider-integrated deployments |
+| **DSR** — Derived State Reconstruction | Application | Any hosted model (Claude, GPT-4, Copilot, etc.) |
+
+**SLS** serializes the actual latent state of a running LLM — KV-cache 
+tensors, sampling state, system bindings — into a portable, 
+deterministic file. It enables resume, fork, migrate, and audit at the 
+inference layer.
+
+**DSR** achieves the same goal without infrastructure access. It defines 
+a typed, human-readable **Structured State Envelope (SSE)** that 
+captures what the model *knew* at session end — and can reconstruct 
+it in a new session with 80–90% of native fidelity.
+
+**SLS is the ideal. DSR is the deploy-today path.**
+
+---
+
+## Why DSR Is Not Just a Summary
+
+Existing approaches fail in predictable ways:
+
+| Approach | Problem |
+| --- | --- |
+| Full conversation replay | Exceeds context windows; poisons with stale content |
+| Narrative summary | Lossy in unpredictable ways; not machine-parseable |
+| KV-cache snapshot | Model-specific, opaque, gigabytes per session |
+
+DSR is none of these. It applies a **semantic diff against model priors** 
+— storing only what the model *cannot* regenerate from its training 
+distribution. The result is a typed schema that is compact, 
+inspectable, and model-agnostic.
+
+The v0.2 spec adds three node types that no prior approach captures:
+
+- **Instruction Nodes** — the procedural layer: what reasoning 
+  operations were running, what lookups were pending, what checks 
+  were flagged but not yet executed
+- **Trajectory Nodes** — not just position but *direction*: where the 
+  session was going, what paths were explicitly declined
+- **Regulatory State Nodes** — the user's cognitive state at session 
+  end: bandwidth, window width, and re-entry conditions
+
+Together these enable the **Re-Entry Protocol** — a structured 
+handshake that restores the *user*, not just the model, to the prior 
+session's reasoning thread.
+
+---
+
+## Fidelity Levels
+
+| Level | Name | Fidelity | Available Today |
+| --- | --- | --- | --- |
+| 0 | No state | 0% | Default for most LLMs |
+| 1 | Preference memory | 5–15% | Copilot Memory, ChatGPT Memory |
+| 2 | Session summary | 25–40% | Manual / OpenAI Agents SDK |
+| 3 | Structured State Envelope | 50–75% | **This spec** |
+| 4 | Augmented Envelope + excerpts | 70–90% | **This spec (advanced)** |
+| 5 | Native KV-Cache (SLS) | ~100% | Requires infrastructure access |
+
+Levels 3–4 are achievable today for any hosted model.  
+Level 5 is the theoretical ceiling — SLS defines it.
+
+---
+
+## Repository Structure
 
 ```
 /
 ├── README.md
 ├── specs/
-│   ├── SLS_Initial_Proposal.md
-│   ├── SLS_Implementation_Guide.md
-│   └── DSR_Specification.md
+│   ├── SLS_Initial_Proposal.md        ← KV-cache serialization spec
+│   ├── SLS_Implementation_Guide.md    ← Engineering hooks + runtime
+│   └── DSR_Specification.md           ← Semantic state envelopes (v0.2)
 ├── schemas/
 │   └── sse.schema.json
 ├── examples/
@@ -81,113 +111,49 @@ Together they form a complete statefulness architecture.
 └── roadmap.md
 ```
 
----
-
-## **Serializable Latent State (SLS)**
-
-SLS defines a binary, portable, deterministic snapshot of an LLM’s latent state:
-
-- KV‑cache tensors
-- sampling RNG state
-- model version + architecture hash
-- system bindings
-- metadata for compatibility and replay
-
-SLS enables:
-
-- **resume** — continue a session exactly where it left off
-- **fork** — branch a session into multiple futures
-- **migrate** — move a session across machines or runtimes
-- **audit** — reproduce outputs bit‑for‑bit
-- **checkpoint** — long‑running workflows without replay
-
-SLS requires inference‑stack cooperation and is intended for self‑hosted or provider‑integrated environments.
+**Start with DSR_Specification.md** if you are working with hosted 
+models. Start with SLS_Initial_Proposal.md if you are working at the 
+inference infrastructure layer.
 
 ---
 
-## **Derived State Reconstruction (DSR)**
+## Status
 
-DSR is the semantic counterpart to SLS.  
-It provides **80–90% of the value of latent‑state persistence** using only application‑layer engineering.
-
-DSR defines the **Structured State Envelope (SSE)** — a typed JSON document containing:
-
-- **Task Graph** — hierarchical task structure and progress
-- **Artifact Registry** — files, code, schemas, and their states
-- **Decision Log** — key decisions and rationale
-- **Active Context** — current problem, hypotheses, constraints
-- **Working Model (optional)** — critical verbatim excerpts
-
-DSR enables:
-
-- multi‑session continuity
-- cross‑model portability
-- human‑editable state
-- resumable workflows
-- agent memory without hallucinated summaries
-
-DSR works with _any_ hosted model (OpenAI, Anthropic, Copilot, etc.) because it requires no access to internal model state.
+| Document | Version | Status |
+| --- | --- | --- |
+| SLS Initial Proposal | v0.1 | Public draft |
+| SLS Implementation Guide | v0.1 | Public draft |
+| DSR Specification | v0.2 | Public draft — cognitive layer added |
 
 ---
 
-## **Fidelity Levels**
+## Related Work
 
-The spec defines a 0–5 fidelity scale:
+The DSR spec's Regulatory State Nodes (5.8) and Re-Entry Protocol (Section 8) 
+are grounded in a broader mechanistic model of human cognitive architecture — 
+specifically, how prediction window width, autonomic state, and precision-gain 
+interact to determine working bandwidth.
 
-- **0** — no state
-- **1** — preference memory
-- **2** — narrative session summary
-- **3** — structured state envelope
-- **4** — structured envelope + critical excerpts
-- **5** — native latent state (SLS)
+That model is documented separately:
 
-Levels 3–4 are achievable today for all hosted models.  
-Level 5 is ideal but requires provider support.
+**→ [Unified Model — Regulatory Architecture Framework](https://github.com/jtrthehax/Unified-Model)**
 
----
-
-## **Status**
-
-This is **v0.1**, an initial public release of the specifications.  
-Future versions will refine:
-
-- schema definitions
-- extraction prompts
-- reconstruction protocols
-- compatibility layers
-- reference implementations
-
-Contributions, discussion, and feedback are welcome.
+The Unified Model formalizes the biological substrate that DSR's user-facing 
+layer is designed to interface with. If you want to understand *why* regulatory 
+state is load-bearing at session boundaries — not just *that* it is — start there.
 
 ---
 
-## **Citation**
+## Citation
 
-A Zenodo DOI will be added after the first tagged release.
+```
+Robinson, J. (2026). LLM State Specification: SLS + DSR.
+Zenodo. https://doi.org/10.5281/zenodo.20820098
+```
 
 ---
 
-## **License**
+## License
 
-	MIT License
-	
-	Copyright (c) 2026 Joel Robinson
-	
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
-	
-	The above copyright notice and this permission notice shall be included in all
-	copies or substantial portions of the Software.
-	
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+MIT License — Copyright (c) 2026 Joel Robinson
 
