@@ -3,7 +3,9 @@
 **The AI Substrate Projection of Central Reference v1.8**
 
 **Robinson, 2026**
+
 **Zenodo preprint — 10.5281/zenodo.20820098**
+
 **Supersedes:** DSR + SLS v0.2
 
 ---
