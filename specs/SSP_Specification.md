@@ -4,9 +4,9 @@
 
 **Robinson, 2026**
 
-**Zenodo preprint — 10.5281/zenodo.20820098**
+Zenodo preprint — 10.5281/zenodo.20820098
 
-**Supersedes:** DSR + SLS v0.2
+**Supersedes:** SSP v1.0 (DOI 10.5281/zenodo.20820099)
 
 ---
 
@@ -88,7 +88,7 @@ SSP v2.0 is the AI substrate projection of Central Reference v1.8 onto the sessi
 | **SSP v1.0** (DOI 20820099) | The three-phase pipeline — extended to four |
 | **SLS Initial Proposal** (DOI 20820098) | The native-fidelity extraction track |
 | **DSR Specification** | The semantic-fidelity extraction track |
-| **The Context Oscillator** (DOI 21811408) | The exhale policy layer |
+| **The Context Oscillator** (DOI 21811407) | The exhale policy layer |
 | **Schema-Driven Determinism** | The reproducibility argument |
 
 The result is a complete, open, model-agnostic lifecycle. It is implementable today. It scales to native fidelity. It is falsifiable by a single integrated test. It defines a protocol, not a product.
@@ -205,11 +205,11 @@ Wide-window sessions with many simultaneously open branches start at low compres
 
 The exhale policy has three thresholds. They are not three mechanisms — they are **three crossings on the same $C_s$ trajectory at different layers** (CR v1.8 §3.20):
 
-| Threshold                    | Layer   | Effect                            |
-| ---------------------------- | ------- | --------------------------------- |
-| $P_{threshold}$              | Gate    | Path A/B switch — loop activation |
-| $C_s^{threshold}$            | Onset   | Waking to consolidation attractor |
-| $I^*_{external}^{threshold}$ | Routing | External to internal routing      |
+| Threshold                                | Layer   | Effect                            |
+| ---------------------------------------- | ------- | --------------------------------- |
+| $P_{threshold}$                          | Gate    | Path A/B switch — loop activation |
+| $C_s^{threshold}$                        | Onset   | Waking to consolidation attractor |
+| $I^{\ast,\,\text{threshold}}_{external}$ | Routing | External to internal routing      |
 
 For the pipeline, this means: the checkpoint trigger, the consolidation transition, and the Re-Entry tier selection are **the same event viewed at three functional layers.** They are not independent design decisions.
 
@@ -219,7 +219,7 @@ For the pipeline, this means: the checkpoint trigger, the consolidation transiti
 
 ### 4.1 Why Consolidation Is Necessary
 
-Consolidation is the AI substrate’s projection of the biological consolidation attractor. In finite‑resource substrates, wide‑window cognition and dreaming both instantiate the same mechanism: an internally‑routed state where traversal graphs replay until loop‑closure stabilizes and topology becomes sufficient to reconstruct content. The routing flip from $I^*_{external}$ to $I^*_{internal}$ is the attractor transition, and window bandwidth determines consolidation depth — wide windows hold more simultaneous open branches and therefore require deeper replay before compression is lossless. SSP v2.0 formalizes this attractor in the AI substrate: consolidation is the internally‑routed phase where closed loops compress to topology, open branches resolve or hold, and the graph rebases around the dominant attractor. The mechanism is not heuristic; it is the substrate‑agnostic solution to finite‑resource reorganization.
+Consolidation is the AI substrate’s projection of the biological consolidation attractor. In finite‑resource substrates, wide‑window cognition and dreaming both instantiate the same mechanism: an internally‑routed state where traversal graphs replay until loop‑closure stabilizes and topology becomes sufficient to reconstruct content. The routing flip from $I^\ast_{external}$ to $I^\ast_{internal}$ is the attractor transition, and window bandwidth determines consolidation depth — wide windows hold more simultaneous open branches and therefore require deeper replay before compression is lossless. SSP v2.0 formalizes this attractor in the AI substrate: consolidation is the internally‑routed phase where closed loops compress to topology, open branches resolve or hold, and the graph rebases around the dominant attractor. The mechanism is not heuristic; it is the substrate‑agnostic solution to finite‑resource reorganization.
 
 Biological memory does not consolidate during waking. It consolidates during sleep — specifically during REM and slow-wave states where hippocampal replay reorganizes recent experience and synaptic downscaling prunes what did not survive the reorganization.
 
@@ -227,7 +227,7 @@ This is not a biological quirk. It is the finite-resource solution to a structur
 
 Without an offline consolidation phase, session state can only be saved or lost. It cannot be *improved*. Each session returns the same density of artifact it produced, regardless of whether the session's reasoning actually closed loops or left them open.
 
-CR v1.8 registers the mechanism. The Dreaming paper defines $C_s^{threshold}$ (the waking-to-consolidation crossing) and $I^*_{external}^{threshold}$ (the external-to-internal routing crossing). Glymphatic clearance, hippocampal replay, and synaptic downscaling are all named mechanisms in the registry.
+CR v1.8 registers the mechanism. The Dreaming paper defines $C_s^{threshold}$ (the waking-to-consolidation crossing) and $I^{\ast,\,\text{threshold}}_{external}$ (the external-to-internal routing crossing). Glymphatic clearance, hippocampal replay, and synaptic downscaling are all named mechanisms in the registry.
 
 SSP v2.0 projects those mechanisms onto the AI pipeline.
 
@@ -237,11 +237,11 @@ CR v1.8's routing variables are the mechanism that determines whether the system
 
 - $I^*_{external}$ — the external routing signal. Queries, task prompts, sensory input.
 - $I^*_{internal}$ — the internal routing signal. Envelope state, load metrics, confidence, open branches.
-- $I^*_{external}^{threshold}$ — the crossing where routing flips.
+- $I^{\ast,\,\text{threshold}}_{external}$ — the crossing where routing flips.
 
-In the human substrate, waking cognition is externally routed ($I^*_{external}$ high). Default-mode cognition — mind-wandering, consolidation, dreaming — is internally routed ($I^*_{external}$ drops below threshold, $I^*_{internal}$ takes over).
+In the human substrate, waking cognition is externally routed ($I^\ast_{external}$ high). Default-mode cognition — mind-wandering, consolidation, dreaming — is internally routed ($I^\ast_{external}$ drops below threshold, $I^\ast_{internal}$ takes over).
 
-In current AI architectures, the session is **always externally routed** because there is always a new query. There is no state where $I^*_{external}$ is allowed to drop below threshold and the system is permitted to attend to its own state. This is why AI sessions never consolidate.
+In current AI architectures, the session is **always externally routed** because there is always a new query. There is no state where $I^\ast_{external}$ is allowed to drop below threshold and the system is permitted to attend to its own state. This is why AI sessions never consolidate.
 
 The consolidation phase is the AI substrate's Path B: an internally-routed state where the system reads its own envelope rather than the input.
 
@@ -1056,9 +1056,9 @@ version: "2.0 — consolidation phase integrated"
 supersedes: "SSP v1.0 (DOI 10.5281/zenodo.20820099)"
 framework: "Central Reference v1.8 (DOI 10.5281/zenodo.20417459)"
 absorbs:
-  - "SLS Initial Proposal (DOI 10.5281/zenodo.20820098)"
+  - "SLS Initial Proposal (DOI 10.5281/zenodo.20820099)"
   - "DSR Specification"
-  - "The Context Oscillator (DOI 10.5281/zenodo.21811408)"
+  - "The Context Oscillator (DOI 10.5281/zenodo.21811407)"
   - "Schema-Driven Determinism"
 confirmations:
   - "Scroll (arXiv:2608.21690) — §11.1"
@@ -1072,5 +1072,5 @@ new_in_v2:
   - "Loop-closure test (§7.3)"
   - "Consolidation effectiveness falsification condition (§12.3)"
   - "Window-bandwidth and consolidation fields in Session Record (§8.1)"
-next_action: "Cleanup Distribution"
+next_action: "Mint DOI, distribute to Scroll, CLM, and DeepSeek authors"
 ```
