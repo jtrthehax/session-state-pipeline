@@ -208,6 +208,8 @@ session boundaries — not just *that* it is — start there.
 
 ```
 Robinson, J. (2026). SSP — Session State Pipeline: Extract, Consolidate, Persist, Restore. Zenodo. https://doi.org/10.5281/zenodo.20820098
+
+Robinson, J. (2026). The Context Oscillator v2.0. Zenodo. DOI: 10.5281/zenodo.21811408
 ```
 
 ---
