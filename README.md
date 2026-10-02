@@ -191,11 +191,16 @@ to determine working bandwidth. The framework composes across physiology,
 cognition, language, AI, and social systems without structural failure.
 Session state is the AI substrate projection of the same mechanism.
 
-All this work is cosolidating towards my other repo-
+The full framework is documented separately:
 
-**→ [The Manifold Schema](https://github.com/jtrthehax/manifold-schema)**
+**→ [Manifold Schema — Regulatory Architecture Framework](https://github.com/jtrthehax/Manifold-Schema)**
 
-Manifold-schema covers this from physiological constraints, language, cognition.
+The Manifold Schema formalizes the biological substrate that SSP's
+user-facing layer is designed to interface with. It covers the
+framework's derivation from physiological constraints, its extension
+through language and cognition, and its projection onto AI systems.
+If you want to understand *why* regulatory state is load-bearing at
+session boundaries — not just *that* it is — start there.
 
 ---
 
