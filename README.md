@@ -114,9 +114,9 @@ Level 5 is the theoretical ceiling — SLS defines it.
 
 ---
 
-## The v0.2 Additions
+## The Procedural Layer
 
-Three node types that no prior approach captures:
+Three node types that no prior approach captures — canonical in SSP v2.0:
 
 - **Instruction Nodes** — the procedural layer: what reasoning
   operations were running, what lookups were pending, what checks
@@ -124,7 +124,7 @@ Three node types that no prior approach captures:
 - **Trajectory Nodes** — not just position but *direction*: where the
   session was going, what paths were explicitly declined
 - **Regulatory State Nodes** — the user's cognitive state at session
-  end: bandwidth, window width, and re-entry conditions
+  end: bandwidth, window width, and consolidation depth
 
 Together these enable the **Re-Entry Protocol** — a structured
 handshake that restores the *user*, not just the model, to the prior
@@ -145,9 +145,9 @@ session's reasoning thread.
 ├── schemas/
 │   └── sse.schema.json
 ├── examples/
-│   ├── example_sse_level3.json
-│   └── example_sse_level4.json
-└── roadmap.md
+    ├── example_sse_level3.json
+    └── example_sse_level4.json
+
 ```
 
 **Start with SSP_Specification.md.** It absorbs SLS and DSR as the two
@@ -160,10 +160,10 @@ as the underlying mechanism specifications.
 
 | Document | Version | Status |
 | --- | --- | --- |
-| SSP Specification | v2.0 | Public draft — consolidation phase added |
-| SLS Initial Proposal | v0.1 | Public draft |
-| SLS Implementation Guide | v0.1 | Public draft |
-| DSR Specification | v0.2 | Public draft — cognitive layer added |
+| SSP Specification | v2.0 | Published |
+| SLS Initial Proposal | v0.1 | Published — absorbed into SSP v2.0 |
+| SLS Implementation Guide | v0.1 | Published — absorbed into SSP v2.0 |
+| DSR Specification | v0.2 | Published — absorbed into SSP v2.0 |
 
 ---
 
@@ -187,16 +187,15 @@ the evidence that the invariants are structural, not design choices.
 SSP's Regulatory State Nodes and Re-Entry Protocol are grounded in a
 broader mechanistic model of human cognitive architecture — specifically,
 how prediction window width, autonomic state, and precision-gain interact
-to determine working bandwidth.
+to determine working bandwidth. The framework composes across physiology,
+cognition, language, AI, and social systems without structural failure.
+Session state is the AI substrate projection of the same mechanism.
 
-That model is documented separately:
+All this work is cosolidating towards my other repo-
 
-**→ [Unified Model — Regulatory Architecture Framework](https://github.com/jtrthehax/Unified-Model)**
+**→ [The Manifold Schema](https://github.com/jtrthehax/manifold-schema)**
 
-The Unified Model formalizes the biological substrate that SSP's
-user-facing layer is designed to interface with. If you want to
-understand *why* regulatory state is load-bearing at session boundaries —
-not just *that* it is — start there.
+Manifold-schema covers this from physiological constraints, language, cognition.
 
 ---
 
