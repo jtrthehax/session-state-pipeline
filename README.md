@@ -210,4 +210,3 @@ Robinson, J. (2026). SSP — Session State Pipeline: Extract, Consolidate, Persi
 ## License
 
 MIT License — Copyright (c) 2026 Joel Robinson
-```
