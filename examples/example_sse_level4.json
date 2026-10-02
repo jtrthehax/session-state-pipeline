@@ -1,0 +1,270 @@
+{
+  "envelope_version": "2.0",
+  "session_id": "sess_20260415_142337_a7c3",
+  "parent_session_id": null,
+  "fork_depth": 0,
+  "created_at": "2026-04-15T14:23:37Z",
+  "extraction_timestamp": "2026-04-15T14:23:37Z",
+  "consolidation_timestamp": "2026-04-15T14:35:12Z",
+  "model_id": "claude-3.7-sonnet",
+  "track": "dsr",
+  "schema_ref": "schema_v1.2.0",
+  "schema_hash": "sha256:9f2c8a1b4e5d6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a",
+  "task_summary": "Debug production incident: race condition in task scheduler. Identify root cause, evaluate candidate fixes, and plan schema migration under backward-compatibility constraint.",
+  "fidelity_level": 4,
+  "status": "active",
+
+  "task_graph": {
+    "root_task": "Resolve race condition in task scheduler causing intermittent task duplication in production.",
+    "subtasks": [
+      {
+        "id": "task_001",
+        "description": "Identify root cause of task duplication",
+        "status": "completed",
+        "outcome": "Race condition in task dispatch: two workers can claim the same task if the claim operation is not atomic against the pending queue.",
+        "depends_on": []
+      },
+      {
+        "id": "task_002",
+        "description": "Evaluate candidate fixes",
+        "status": "completed",
+        "outcome": "Three candidates evaluated. Two ruled out (locking semantics, distributed consensus overhead). One preferred (atomic claim via compare-and-swap).",
+        "depends_on": ["task_001"]
+      },
+      {
+        "id": "task_003",
+        "description": "Plan schema migration for the preferred fix",
+        "status": "in_progress",
+        "current_focus": "Designing backward-compatible migration across two prior schema versions.",
+        "depends_on": ["task_002"]
+      },
+      {
+        "id": "task_004",
+        "description": "Verify migration does not touch authentication layer",
+        "status": "not_started",
+        "depends_on": ["task_003"]
+      }
+    ]
+  },
+
+  "artifact_registry": [
+    {
+      "id": "artifact_scheduler_src",
+      "type": "source_file",
+      "path": "src/scheduler/dispatch.ts",
+      "description": "Task dispatch module containing the non-atomic claim operation.",
+      "last_known_state": "Unmodified. Contains the claim_task() function at lines 47-63.",
+      "key_structures": ["claim_task()", "TaskQueue", "WorkerRegistry"]
+    },
+    {
+      "id": "artifact_schema_v1",
+      "type": "schema",
+      "path": "migrations/schema_v1.sql",
+      "description": "Original schema version. Must remain compatible.",
+      "last_known_state": "Production. Two versions back from current."
+    },
+    {
+      "id": "artifact_schema_v2",
+      "type": "schema",
+      "path": "migrations/schema_v2.sql",
+      "description": "Intermediate schema version. Must remain compatible.",
+      "last_known_state": "Production. One version back from current."
+    },
+    {
+      "id": "artifact_schema_v3",
+      "type": "schema",
+      "path": "migrations/schema_v3.sql",
+      "description": "Current schema version. Migration must preserve current behavior.",
+      "last_known_state": "Production. Live."
+    }
+  ],
+
+  "decision_log": [
+    {
+      "id": "dec_001",
+      "decision": "Root cause is a race condition in the task claim operation, not a scheduler logic error.",
+      "rationale": "Reproduction shows task duplication only under concurrent worker load. Single-worker runs do not duplicate. Claim operation is read-then-write, not atomic.",
+      "made_at": "turn_12",
+      "alternatives_considered": [
+        "Scheduler logic error — ruled out, logic is deterministic under single worker",
+        "Network partition causing duplicate dispatch — ruled out, duplicates appear within single datacenter"
+      ]
+    },
+    {
+      "id": "dec_002",
+      "decision": "Reject fix candidate A (global locking around claim operation).",
+      "rationale": "Global locking serializes all task claims and reduces throughput by an estimated 40%. Unacceptable for the workload profile.",
+      "made_at": "turn_22",
+      "alternatives_considered": []
+    },
+    {
+      "id": "dec_003",
+      "decision": "Reject fix candidate B (distributed consensus on every claim).",
+      "rationale": "Consensus round-trip adds 15-30ms latency to every claim. Throughput cost exceeds the failure mode's impact. Overkill for the problem.",
+      "made_at": "turn_27",
+      "alternatives_considered": []
+    },
+    {
+      "id": "dec_004",
+      "decision": "Adopt fix candidate C (atomic claim via compare-and-swap on the pending queue).",
+      "rationale": "Preserves throughput. Introduces no new coordination layer. Requires a schema change to add a version column, which must be backward compatible.",
+      "made_at": "turn_34",
+      "alternatives_considered": [
+        "Candidate A — global locking",
+        "Candidate B — distributed consensus"
+      ]
+    },
+    {
+      "id": "dec_005",
+      "decision": "Migration must not modify the authentication layer under any circumstances.",
+      "rationale": "Hard constraint established at session start. Authentication is out of scope and is load-bearing for compliance.",
+      "made_at": "turn_3",
+      "alternatives_considered": []
+    }
+  ],
+
+  "active_context": {
+    "current_problem": "Design backward-compatible schema migration for the atomic-claim fix, without touching the authentication layer.",
+    "hypotheses": [
+      "A nullable version column added to the tasks table will preserve compatibility with v1 and v2 read paths.",
+      "v3 write paths need to populate the version column, but v1 and v2 write paths must continue to function during rollout.",
+      "A shadow write during the transition window may be required to backfill the version column without downtime."
+    ],
+    "last_action": "Drafted the v3-to-v2 compatibility path. Not yet validated against v1.",
+    "next_steps": [
+      "Validate migration against v1 read/write paths",
+      "Design the shadow-write backfill procedure",
+      "Verify no authentication table is touched by the migration",
+      "Draft rollback procedure for the case where the migration must be reversed"
+    ],
+    "constraints": [
+      "Must preserve compatibility with schema v1 and v2",
+      "Must not modify the authentication layer",
+      "Zero-downtime migration",
+      "Rollback must be possible within 15 minutes"
+    ]
+  },
+
+  "working_model": {
+    "critical_excerpts": [
+      {
+        "artifact_id": "artifact_scheduler_src",
+        "region": "lines 47-63",
+        "content": "async claim_task(worker_id: string): Promise<Task | null> {\n  const pending = await this.queue.listPending();\n  if (pending.length === 0) return null;\n  const task = pending[0];\n  await this.queue.markClaimed(task.id, worker_id);\n  await this.workers.recordClaim(worker_id, task.id);\n  return task;\n}",
+        "annotation": "The non-atomic claim operation. Between listPending() and markClaimed(), another worker can claim the same task. This is the exact location of the race condition."
+      },
+      {
+        "artifact_id": "artifact_schema_v3",
+        "region": "tasks table definition",
+        "content": "CREATE TABLE tasks (\n  id UUID PRIMARY KEY,\n  status TEXT NOT NULL,\n  claimed_by TEXT,\n  claimed_at TIMESTAMPTZ,\n  payload JSONB NOT NULL,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);",
+        "annotation": "Current tasks table. No version column. The migration adds a nullable version column and backfills it via shadow write."
+      },
+      {
+        "artifact_id": "artifact_schema_v1",
+        "region": "tasks table definition",
+        "content": "CREATE TABLE tasks (\n  id UUID PRIMARY KEY,\n  status TEXT NOT NULL,\n  claimed_by TEXT,\n  payload JSONB NOT NULL,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);",
+        "annotation": "v1 tasks table. No claimed_at, no version. Backward compatibility requires that v1 write paths continue to function without modification, which is why the version column must be nullable with a default."
+      },
+      {
+        "artifact_id": "artifact_schema_v2",
+        "region": "tasks table definition",
+        "content": "CREATE TABLE tasks (\n  id UUID PRIMARY KEY,\n  status TEXT NOT NULL,\n  claimed_by TEXT,\n  claimed_at TIMESTAMPTZ,\n  payload JSONB NOT NULL,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);",
+        "annotation": "v2 tasks table. Same as v3 except no version column. The migration must add version without breaking v2 read paths."
+      }
+    ]
+  },
+
+  "trajectory": {
+    "current_direction": "Designing the backward-compatible schema migration for the atomic-claim fix.",
+    "momentum": 8,
+    "closed_paths": [
+      {
+        "path": "Fix candidate A — global locking around claim",
+        "reason": "Throughput cost unacceptable",
+        "closed_at": "turn_22"
+      },
+      {
+        "path": "Fix candidate B — distributed consensus on claims",
+        "reason": "Latency cost exceeds problem impact",
+        "closed_at": "turn_27"
+      },
+      {
+        "path": "Scheduler logic rewrite",
+        "reason": "Root cause identified elsewhere; rewrite not required",
+        "closed_at": "turn_14"
+      }
+    ],
+    "open_branches": [
+      {
+        "id": "branch_shadow_write",
+        "description": "Shadow-write backfill procedure for the version column during rollout.",
+        "edges_accumulated": 4,
+        "imminent_closure": true
+      },
+      {
+        "id": "branch_rollback",
+        "description": "Rollback procedure if migration must be reversed.",
+        "edges_accumulated": 2,
+        "imminent_closure": false
+      }
+    ]
+  },
+
+  "instruction_nodes": [
+    {
+      "id": "instr_001",
+      "status": "in_progress",
+      "next_step": "Validate the v3-to-v2 compatibility path against the v1 read/write code paths.",
+      "depends_on": ["task_003"],
+      "constraints": [
+        "Migration must not touch authentication tables"
+      ]
+    },
+    {
+      "id": "instr_002",
+      "status": "pending",
+      "next_step": "Design shadow-write backfill procedure.",
+      "depends_on": ["instr_001"],
+      "constraints": []
+    },
+    {
+      "id": "instr_003",
+      "status": "pending",
+      "next_step": "Verify migration scope against the authentication layer (read-only check).",
+      "depends_on": ["instr_002"],
+      "constraints": [
+        "Read-only — do not modify authentication configuration"
+      ]
+    },
+    {
+      "id": "instr_004",
+      "status": "pending",
+      "next_step": "Draft rollback procedure with 15-minute target.",
+      "depends_on": ["instr_003"],
+      "constraints": [
+        "Rollback must complete within 15 minutes"
+      ]
+    }
+  ],
+
+  "regulatory_state": {
+    "window_bandwidth": "standard",
+    "open_closed_ratio": 0.6,
+    "consolidation_depth": "standard",
+    "peak_window_turns": [8, 12, 27, 34],
+    "rebase_history": ["root_task_001"],
+    "bandwidth_trajectory": "stable"
+  },
+
+  "non_regenerable_diff": {
+    "summary": "Level 4 stores the same decisions and trajectory as level 3, plus verbatim excerpts of the specific code and schema regions that cannot be regenerated from model priors. The excerpts are what distinguishes level 4 from level 3.",
+    "node_count": {
+      "total_evaluated": 142,
+      "regenerable_pruned": 89,
+      "stored": 53,
+      "stored_with_excerpts": 4
+    }
+  },
+
+  "artifact_hmac": "sha256:c9e5f3b2d4e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a"
+}
