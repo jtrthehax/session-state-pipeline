@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jtrthehax/session-state-pipeline/schema/sse.schema.json",
+  "title": "Structured State Envelope (SSE) — SSP v2.0",
+  "description": "Typed semantic state representation for the Session State Pipeline (SSP). Absorbs the DSR v0.1 schema and extends it with trajectory, instruction nodes, regulatory state, and consolidation fields.",
+  "type": "object",
+  "additionalProperties": false,
+
+  "required": [
+    "envelope_version",
+    "session_id",
+    "created_at",
+    "model_id",
+    "task_summary",
+    "fidelity_level",
+    "task_graph",
+    "artifact_registry",
+    "decision_log",
+    "active_context",
+    "trajectory",
+    "instruction_nodes",
+    "regulatory_state",
+    "non_regenerable_diff"
+  ],
+
+  "properties": {
+
+    "envelope_version": {
+      "type": "string",
+      "description": "Version of the SSE schema. SSP v2.0 uses '2.0'."
+    },
+
+    "session_id": {
+      "type": "string",
+      "description": "Unique identifier for this session. Format: sess_YYYYMMDD_HHMMSS_[4-char random]."
+    },
+
+    "parent_session_id": {
+      "type": ["string", "null"],
+      "description": "Null for root sessions. Set for forks."
+    },
+
+    "fork_depth": {
+      "type": "integer",
+      "description": "0 for root sessions. Incremented on each fork."
+    },
+
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this envelope was created."
+    },
+
+    "extraction_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When Extract completed."
+    },
+
+    "consolidation_timestamp": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When Consolidate completed. Null if consolidation was skipped."
+    },
+
+    "model_id": {
+      "type": "string",
+      "description": "Identifier of the model used at extraction (e.g., 'claude-3.7', 'gpt-5-2026-04')."
+    },
+
+    "track": {
+      "type": "string",
+      "enum": ["sls", "dsr"],
+      "description": "Fidelity track. 'sls' = native KV-cache, 'dsr' = semantic extraction."
+    },
+
+    "schema_ref": {
+      "type": "string",
+      "description": "Schema version pinned at extraction time (semver)."
+    },
+
+    "schema_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the schema at extraction time. Used for tamper detection."
+    },
+
+    "task_summary": {
+      "type": "string",
+      "description": "Short human-readable summary of the overall task."
+    },
+
+    "fidelity_level": {
+      "type": "integer",
+      "enum": [3, 4, 5],
+      "description": "3 = structured state (DSR standard). 4 = + critical excerpts. 5 = native KV-cache (SLS)."
+    },
+
+    "status": {
+      "type": "string",
+      "enum": ["active", "suspended", "archived", "forked"],
+      "description": "Session lifecycle status."
+    },
+
+    "task_graph": {
+      "type": "object",
+      "required": ["root_task", "subtasks"],
+      "properties": {
+        "root_task": { "type": "string" },
+        "subtasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "description", "status"],
+            "properties": {
+              "id": { "type": "string" },
+              "description": { "type": "string" },
+              "status": {
+                "type": "string",
+                "enum": ["completed", "in_progress", "not_started", "blocked"]
+              },
+              "outcome": { "type": "string" },
+              "current_focus": { "type": "string" },
+              "depends_on": { "type": "array", "items": { "type": "string" } },
+              "blocked_by": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+
+    "artifact_registry": {
+      "type": "array",
+      "description": "Registry of files, documents, or artifacts referenced in the session.",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "path", "description"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "path": { "type": "string" },
+          "description": { "type": "string" },
+          "last_known_state": { "type": "string" },
+          "key_structures": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+
+    "decision_log": {
+      "type": "array",
+      "description": "Log of key decisions made during the session.",
+      "items": {
+        "type": "object",
+        "required": ["id", "decision"],
+        "properties": {
+          "id": { "type": "string" },
+          "decision": { "type": "string" },
+          "rationale": { "type": "string" },
+          "made_at": { "type": "string" },
+          "alternatives_considered": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+
+    "active_context": {
+      "type": "object",
+      "required": ["current_problem"],
+      "properties": {
+        "current_problem": { "type": "string" },
+        "hypotheses": { "type": "array", "items": { "type": "string" } },
+        "last_action": { "type": "string" },
+        "next_steps": { "type": "array", "items": { "type": "string" } },
+        "constraints": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "working_model": {
+      "type": "object",
+      "description": "Optional verbatim excerpts for Level 4 envelopes.",
+      "properties": {
+        "critical_excerpts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["artifact_id", "region", "content"],
+            "properties": {
+              "artifact_id": { "type": "string" },
+              "region": { "type": "string" },
+              "content": { "type": "string" },
+              "annotation": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "trajectory": {
+      "type": "object",
+      "description": "Direction of the session — where it was going, not just where it was.",
+      "required": ["current_direction", "momentum"],
+      "properties": {
+        "current_direction": {
+          "type": "string",
+          "description": "The active investigative vector at extraction time."
+        },
+        "momentum": {
+          "type": "integer",
+          "description": "Number of consecutive turns moving along the current direction."
+        },
+        "closed_paths": {
+          "type": "array",
+          "description": "Branches that were explicitly ruled out or abandoned.",
+          "items": {
+            "type": "object",
+            "required": ["path", "reason"],
+            "properties": {
+              "path": { "type": "string" },
+              "reason": { "type": "string" },
+              "closed_at": { "type": "string" }
+            }
+          }
+        },
+        "open_branches": {
+          "type": "array",
+          "description": "Branches still being explored at extraction time.",
+          "items": {
+            "type": "object",
+            "required": ["id", "description"],
+            "properties": {
+              "id": { "type": "string" },
+              "description": { "type": "string" },
+              "edges_accumulated": { "type": "integer" },
+              "imminent_closure": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+
+    "instruction_nodes": {
+      "type": "array",
+      "description": "Pending procedural operations and constraints at extraction time.",
+      "items": {
+        "type": "object",
+        "required": ["id", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["in_progress", "pending", "blocked", "completed"]
+          },
+          "next_step": { "type": "string" },
+          "depends_on": { "type": "array", "items": { "type": "string" } },
+          "constraints": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+
+    "regulatory_state": {
+      "type": "object",
+      "description": "Session-level traversal pattern and cognitive state at extraction.",
+      "required": ["window_bandwidth"],
+      "properties": {
+        "window_bandwidth": {
+          "type": "string",
+          "enum": ["wide", "standard", "narrow"],
+          "description": "Session bandwidth signature. Determines consolidation depth."
+        },
+        "open_closed_ratio": {
+          "type": "number",
+          "description": "Ratio of closed loops to open branches at consolidation."
+        },
+        "consolidation_depth": {
+          "type": ["string", "null"],
+          "enum": ["deep", "standard", "shallow", null],
+          "description": "Consolidation depth used. Null if not consolidated."
+        },
+        "peak_window_turns": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Turns where the session ran at peak window width."
+        },
+        "rebase_history": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Node IDs that have served as root, in sequence."
+        },
+        "bandwidth_trajectory": {
+          "type": "string",
+          "enum": ["rising", "stable", "declining"],
+          "description": "Direction of window width at extraction."
+        }
+      }
+    },
+
+    "non_regenerable_diff": {
+      "type": "object",
+      "description": "The typed semantic diff that Restore operates against. This is the operational field — the pipeline does not use the full envelope for rehydration.",
+      "additionalProperties": true
+    },
+
+    "artifact_hmac": {
+      "type": "string",
+      "description": "HMAC of the full artifact. Computed at persist time. Validated before any read or write."
+    }
+  }
+}
